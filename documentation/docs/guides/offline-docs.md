@@ -35,45 +35,30 @@ is referenced by a path listed there.
 
 ## Building a local docs root
 
-Generate the tree from a goose checkout using the same version as your goose
-binary, so the docs match the runtime. The generated artifacts are written to a
-dedicated `goose-docs/` subdirectory of the build directory (`build/goose-docs/`
-by default), which keeps the output clearly identifiable and easy to copy or
-package as a unit. For example:
+Build the docs from a goose checkout using the same version as your goose
+binary, so the docs match the runtime. The standard documentation build already
+produces everything goose needs — a `goose-docs-map.md` index and a `docs/` tree
+of markdown files — so no custom tooling is required:
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-GOOSE_VERSION="${1:-v1.41.0}"
-BUILD_DIR="${2:-build}"
-REPO="${GOOSE_REPO:-$(git rev-parse --show-toplevel)}"
-
-DOCS_ROOT="$BUILD_DIR/goose-docs"
-
-cd "$REPO"
-git checkout --quiet "$GOOSE_VERSION"
-
+git checkout v1.41.0   # match your goose binary version
 cd documentation
-npm ci
-node scripts/generate-docs-map.js
-
-rm -rf "$DOCS_ROOT"
-mkdir -p "$DOCS_ROOT/docs"
-cp static/goose-docs-map.md "$DOCS_ROOT/goose-docs-map.md"
-cp -r docs/getting-started docs/guides "$DOCS_ROOT/docs/"
-
-DOCS_ROOT_ABS="$(cd "$DOCS_ROOT" && pwd)"
-
-CONFIG="${GOOSE_CONFIG_PATH:-$HOME/.config/goose/config.yaml}"
-mkdir -p "$(dirname "$CONFIG")"
-touch "$CONFIG"
-sed -i.bak '/^GOOSE_DOCS_ROOT:/d' "$CONFIG" && rm -f "$CONFIG.bak"
-echo "GOOSE_DOCS_ROOT: \"$DOCS_ROOT_ABS\"" >> "$CONFIG"
+npm run build
 ```
 
-To deploy, copy the generated `build/goose-docs/` directory to your target
-location (for example `/opt/goose-docs`) and point `GOOSE_DOCS_ROOT` at it.
+This writes the docs root to `documentation/build/`, containing:
+
+```
+build/
+├── goose-docs-map.md
+└── docs/
+    ├── getting-started/...
+    └── guides/...
+```
+
+`npm run build` requires registry access, so run it in an online environment.
+Then copy the resulting `build/` directory to your air-gapped target location
+(for example `/opt/goose-docs`) and point `GOOSE_DOCS_ROOT` at it.
 
 ## Configuring goose
 
